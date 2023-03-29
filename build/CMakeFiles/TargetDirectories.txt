@@ -1,5 +1,0 @@
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/pmmf.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/dog.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/copy_to.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/edit_cache.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/rebuild_cache.dir

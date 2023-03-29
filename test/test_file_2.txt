@@ -1,9 +1,114 @@
-===========================================In pharetra commodo sem, non feugiat nunc ornare nec. Maecenas tristique ac ex sed posuere. Proin efficitur imperdiet lobortis. Quisque id dignissim lacus, a aliquam tortor. Donec aliquam tempus mi sed dignissim. Mauris cursus, dolor nec rhoncus imperdiet, ex ex semper libero, vel cursus nibh orci quis lorem. Maecenas convallis justo sed odio blandit, vel imperdiet nulla porta. Cras facilisis, lacus sit amet congue vehicula, lorem arcu scelerisque enim, vel pellentesque lectus libero a ipsum. Phasellus elementum molestie elit, sit amet auctor ipsum accumsan in. In lacinia mauris sit amet venenatis feugiat. Sed nec felis viverra augue vehicula mollis. Mauris tristique mi pellentesque felis mollis, in vehicula orci accumsan. Aenean ut lectus elementum elit mollis sagittis. Curabitur nisl lorem, accumsan sed mollis eu, tincidunt at lorem. Integer facilisis dui ut turpis scelerisque, ac facilisis dui consequat.
+Fuck You C++!mory-Mapped File library
+libpmmf - Portable Memory-Mapped File library for C++
 
-Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nullam aliquam non metus eget tincidunt. Nulla bibendum nisi velit, eget faucibus enim consequat sed. Duis dictum fringilla metus, quis ornare mauris tincidunt at. Suspendisse potenti. Cras mollis porta porttitor. Suspendisse eu nunc odio. Aenean placerat leo a blandit volutpat. Aenean mattis suscipit congue. Donec odio mauris, malesuada quis venenatis eu, mattis ultricies est. Cras placerat blandit nulla, at ornare tortor tincidunt vitae. Pellentesque dolor est, vehicula non quam nec, rutrum hendrerit mi.
+## Build:
 
-Praesent quis finibus urna, id tempor massa. Curabitur pretium pellentesque augue, sit amet tincidunt sem molestie vitae. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris eu enim eget urna semper egestas ut eget tellus. Nulla suscipit est eget turpis laoreet, a sodales erat molestie. Etiam id purus ante. Morbi ante lorem, scelerisque nec urna sed, consectetur tempus ligula. Nulla sit amet bibendum augue, nec aliquet ipsum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. In aliquam tellus vel leo malesuada laoreet.
+Build pmmf library for Linux (required [GCC](https://gcc.gnu.org/), [CMake](https://cmake.org/download/), [Make](https://www.gnu.org/software/make/)):
 
-Fusce at pharetra risus, a sagittis metus. Curabitur feugiat odio hendrerit nisl tempus accumsan. Vestibulum fermentum mollis nulla et pellentesque. Maecenas posuere commodo dolor id elementum. Praesent finibus massa nec sagittis bibendum. Nam molestie est eget varius euismod. Nunc faucibus sit amet lacus vitae consequat. Fusce blandit accumsan dignissim. Nunc vel tortor placerat, pellentesque ante a, vulputate massa. Mauris eu nulla ultricies, vehicula erat ac, tristique felis. Aenean varius, ipsum rutrum vulputate commodo, orci erat pharetra tortor, at placerat dui arcu at tortor.
+```bash
+git clone git@github.com:gbytegear/libpmmf.git
+cd ./libpmmf/build
+cmake . -G "Unix Makefiles" . -DCMAKE_BUILD_TYPE=Release
+make pmmf
+```
 
-Sed diam est, maximus non nisl vitae, euismod bibendum lorem. Etiam fringilla libero sed ex lobortis faucibus. Suspendisse congue, magna sit amet auctor congue, tortor diam posuere nunc, in ornare nisi massa vel risus. Donec posuere finibus turpis, rutrum bibendum lectus interdum at. Sed sodales vestibulum lobortis. Nam ante urna, aliquet et semper sit amet, lacinia nec magna. Integer non elit ipsum. In quis lobortis tortor, in finibus tellus. Ut sit amet nunc eros. Nulla feugiat sem eu scelerisque tincidunt. Ut ut ex a tortor fermentum ullamcorper. Maecenas pharetra nunc nulla, ut imperdiet dolor viverra eget. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nulla commodo metus quis metus pretium, pulvinar luctus nisi lacinia. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
+Result - `libpmmf/build/libpmmf.a`
+
+Build pmmf library for Windows (required [MSys2](https://www.msys2.org/) step 1-5, [MinGW](https://www.msys2.org/) step 6-7, [CMake](https://cmake.org/), [Make](https://packages.msys2.org/package/make)):
+
+```bash
+git clone git@github.com:gbytegear/libpmmf.git
+cd ./libpmmf/build
+cmake . -G "MSYS Makefiles" . -DCMAKE_BUILD_TYPE=Release
+make pmmf
+```
+
+## Usage:
+
+A simple example of outputting a text file to the console, modifying it, and then outputting it again to the console:
+
+```cpp
+#include "include/mmf.hxx"
+#include <iostream>
+#include <cstring> // Required for memcpy on Linux
+
+int main(int argc, char* argv[]) {
+
+  if (argc < 2) {
+    std::cout << "Required file paths!" << std::endl;
+    return -1;
+  }
+
+  for(auto arg = argv + 1; argc != 1; (--argc, ++arg)) {
+    std::cout << "Try to open \"" << *arg << '"' << std::endl;
+    pmmf::MemoryMappedFile mapped_file(*arg);
+    if(!mapped_file.isFileOpen()) {
+      std::cout << "Can't open \"" << *arg << "\" file" << std::endl;
+      continue;
+    } else if(!mapped_file.isFileMapped()) {
+      std::cout << "Can't map \"" << *arg << "\" file" << std::endl;
+      continue;
+    }
+
+    std::cout << "File \"" << *arg << "\":" << std::endl
+              << mapped_file.getPageStart<char>() << std::endl;
+
+    std::memcpy(mapped_file.getPageStart<char>(), "Hello world " , strlen("Hello world "));
+
+    if(!mapped_file.flush()) {
+      std::cout << "Can't flush \"" << *arg << "\" file" << std::endl;
+    }
+
+    std::cout << "Changed File \"" << *arg << "\":" << std::endl
+              << mapped_file.getPageStart<char>() << std::endl;
+  }
+
+  return 0;
+}
+```
+
+An example of copying the contents of one file to another:
+
+```cpp
+#include "include/mmf.hxx"
+#include <iostream>
+
+#include <cstring>
+
+
+auto main(int argc, char* argv[]) -> int {
+
+  using namespace pmmf;
+
+  if (argc < 3) {
+    std::cout << "Required 2 file paths!" << std::endl;
+    return -1;
+  }
+
+  MemoryMappedFile source_file(argv[1], Protocol::read, MapFlag::priv);
+  if(!source_file.isFileOpen()) {
+    std::cout << "Can't open \"" << argv[1] << "\" file (source)" << std::endl;
+    return -1;
+  } else if(!source_file.isFileMapped()) {
+    std::cout << "Can't map \"" << argv[1] << "\" file (source)" << std::endl;
+    return -1;
+  }
+
+  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol((int)Protocol::read | (int)Protocol::write | (int)Protocol::open_trunc), MapFlag::priv, 0);
+  if(!target_file.isFileOpen()) {
+    std::cout << "Can't open \"" << argv[2] << "\" file (target)" << std::endl;
+    return -1;
+  } else if(!target_file.isFileMapped()) {
+    std::cout << "Can't map \"" << argv[2] << "\" file (target)" << std::endl;
+    return -1;
+  }
+
+  memcpy(target_file.getPageStart<void>(), source_file.getPageStart<void>(), source_file.getFileSize());
+  if(!target_file.flush()) {
+    std::cout << "Can't flush \"" << argv[2] << "\" file" << std::endl;
+    return -1;
+  }
+
+  return 0;
+}
+```

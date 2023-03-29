@@ -110,18 +110,15 @@ MemoryMappedFile::MemoryMappedFile(std::string file_path,
     MapFlag flags,
     std::size_t offset)
   : file_descriptor(openFile(std::move(file_path), prot)),
-    memory_page_start(isFileOpen() ? mmapPortable(nullptr, map_size, prot, flags, file_descriptor, offset) : nullptr),
-    mapped_size(isFileMapped() ? map_size : 0) {}
+    memory_page_start(isFileOpen() ? mmapPortable(nullptr, (this->mapped_size = !map_size ? getFileSize() : map_size), prot, flags, file_descriptor, offset) : nullptr) {}
 
 MemoryMappedFile::MemoryMappedFile(std::string file_path, Protocol prot, MapFlag flags)
   : file_descriptor(openFile(std::move(file_path), prot)),
-    memory_page_start(isFileOpen() ? mmapPortable(nullptr, getFileSize(), prot, flags, file_descriptor, 0) : nullptr),
-    mapped_size(isFileMapped() ? getFileSize() : 0) {}
+    memory_page_start(isFileOpen() ? mmapPortable(nullptr, (this->mapped_size = getFileSize()), prot, flags, file_descriptor, 0) : nullptr) {}
 
 MemoryMappedFile::MemoryMappedFile(std::string file_path)
   : file_descriptor(openFile(std::move(file_path), Protocol((int)Protocol::read | (int)Protocol::write))),
-    memory_page_start(isFileOpen() ? mmapPortable(nullptr, getFileSize(), Protocol((int)Protocol::read | (int)Protocol::write), MapFlag::priv, file_descriptor, 0) : nullptr),
-    mapped_size(isFileMapped() ? getFileSize() : 0) {}
+    memory_page_start(isFileOpen() ? mmapPortable(nullptr, (this->mapped_size = getFileSize()), Protocol((int)Protocol::read | (int)Protocol::write), MapFlag::priv, file_descriptor, 0) : nullptr) {}
 
 
 MemoryMappedFile::~MemoryMappedFile() {

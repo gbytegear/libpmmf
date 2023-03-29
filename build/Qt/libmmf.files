@@ -4,5 +4,6 @@
 ../../source/mmf.cxx
 ../../test/cat.cxx
 ../../test/copy_to.cxx
+../../test/data_storage.cxx
 ../CMakeLists.txt
 ../../README.md

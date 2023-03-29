@@ -22,7 +22,7 @@ auto main(int argc, char* argv[]) -> int {
     return -1;
   }
 
-  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol((int)Protocol::read | (int)Protocol::write | (int)Protocol::open_trunc), MapFlag::priv, 0);
+  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol((int)Protocol::read | (int)Protocol::write), MapFlag::priv, 0);
   if(!target_file.isFileOpen()) {
     std::cout << "Can't open \"" << argv[2] << "\" file (target)" << std::endl;
     return -1;

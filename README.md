@@ -38,39 +38,58 @@ A simple example of outputting a text file to the console, modifying it, and the
 ```cpp
 #include "include/mmf.hxx"
 #include <iostream>
-#include <cstring> // Required for memcpy on Linux
 
-int main(int argc, char* argv[]) {
+#pragma pack(push, 1)
+
+struct Data {
+  char cstr[50];
+};
+
+#pragma pack(pop)
+
+auto main(int argc, char* argv[]) -> int {
+
+  using namespace pmmf;
 
   if (argc < 2) {
-    std::cout << "Required file paths!" << std::endl;
+    std::cerr << "Required 1 file paths!" << std::endl;
     return -1;
   }
 
-  for(auto arg = argv + 1; argc != 1; (--argc, ++arg)) {
-    std::cout << "Try to open \"" << *arg << '"' << std::endl;
+  Data data_1 = {"Lorem ipsum dolor sit amet, consectetur efficitur"};
+  Data data_2 = {"Lorem ipsum dolor sit amet, consectetur tincidunt"};
 
-    pmmf::MemoryMappedFile mapped_file(*arg); // <---------------------------------------------- Open file
-    if(!mapped_file.isFileOpen()) { // <-------------------------------------------------------- Check file is open
-      std::cout << "Can't open \"" << *arg << "\" file" << std::endl;
-      continue;
-    } else if(!mapped_file.isFileMapped()) { // <------------------------------------------------ Check file is mapped
-      std::cout << "Can't map \"" << *arg << "\" file" << std::endl;
-      continue;
-    }
-
-    std::cout << "File \"" << *arg << "\":" << std::endl
-              << mapped_file.getPageStart<char>() << std::endl; // <----------------------------- Get pointer to start of file mapped area as char*
-
-    std::memcpy(mapped_file.getPageStart<char>(), "Hello world " , strlen("Hello world ")); //<-- Set "Hello World" to start of file
-
-    if(!mapped_file.flush()) { // <-------------------------------------------------------------- Write changes to file
-      std::cout << "Can't flush \"" << *arg << "\" file" << std::endl;
-    }
-
-    std::cout << "Changed File \"" << *arg << "\":" << std::endl
-              << mapped_file.getPageStart<char>() << std::endl; // <----------------------------- Get pointer to start of file mapped area as char*
+  MappedFile mapped_file(argv[1]);
+  if(!mapped_file.isFileOpen()) {
+    std::cerr << "Can't open \"" << argv[1] << "\" file" << std::endl;
+    return -1;
   }
+  std::cout << "File \"" << argv[1] << "\" is open" << std::endl
+            << "File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
+
+  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data));
+  if(!second_mapped_array.isMapped()) {
+    std::cerr << "Can't map second area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
+  std::cout << "Second area of \"" << argv[1] << "\" file is mapped" << std::endl;
+
+  MappedArray<Data> first_mapped_array = mapped_file.getMappedArray<Data>(0);
+  if(!second_mapped_array.isMapped()) {
+    std::cerr << "Can't map first area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
+  std::cout << "First area of \"" << argv[1] << "\" file is mapped" << std::endl;
+
+  new(&*first_mapped_array) Data(data_1);
+  second_mapped_array.flush();
+  std::cout << "First area of \"" << argv[1] << "\" file is flushed" << std::endl;
+
+  new(&*second_mapped_array) Data(data_2);
+  second_mapped_array.flush();
+  std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl;
+
+  std::cout << "File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
 
   return 0;
 }

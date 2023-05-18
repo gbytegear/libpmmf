@@ -25,6 +25,8 @@ typedef uint32_t off_t;
 
 #else
 
+#include <aio.h>
+
 namespace pmmf {
 /**
  * @brief FileDescriptor - alias for native handle of file
@@ -95,10 +97,16 @@ enum class MapFlag : int {
  * @brief mmap - portable analogue of Unix mmap, see: https://www.opennet.ru/man.shtml?topic=mmap&category=&submit=%F0%CF%CB%C1%DA%C1%D4%D8+man
  */
 extern void* mmap(void* start, size_t length, ProtectionMode prot, MapFlag flags, FileDescriptor fd, off_t offset);
+
 /**
  * @brief munmap - portable analogue of Unix munmap, see: https://www.opennet.ru/man.shtml?topic=mmap&category=&submit=%F0%CF%CB%C1%DA%C1%D4%D8+man
  */
 extern void munmap(void *addr, std::size_t length);
+
+/**
+ * @brief msync - synchronize a file with a memory map: https://www.opennet.ru/man.shtml?topic=msync&russian=2&category=&submit=%F0%CF%CB%C1%DA%C1%D4%D8+man
+ */
+extern int msync(FileDescriptor file_descriptor, void *start, size_t length, int flags);
 
 }
 

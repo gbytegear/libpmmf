@@ -8,8 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "C:/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx" "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.obj" "gcc" "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.obj.d"
-  "C:/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx" "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.obj" "gcc" "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.obj.d"
+  "/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx" "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.o" "gcc" "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.o.d"
+  "/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx" "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.o" "gcc" "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.o.d"
   )
 
 # Targets to which this target links.

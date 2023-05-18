@@ -100,8 +100,19 @@ extern void* pmmf::mmap(void* start, size_t length, ProtectionMode prot, MapFlag
 
 extern void pmmf::munmap(void *addr, std::size_t length) {
 #ifndef _WIN32
-  munmap(addr, length);
+  ::munmap(addr, length);
 #else
   UnmapViewOfFile(addr);
+#endif
+}
+
+extern int pmmf::msync(FileDescriptor file_descriptor, void* start, size_t length, int flags) {
+#ifdef _WIN32
+  return (::FlushViewOfFile(start, 0))
+      ? (::FlushFileBuffers(file_descriptor))
+        ? 0 : -1
+      : -1;
+#else
+  return ::msync(start, length, MS_SYNC);
 #endif
 }

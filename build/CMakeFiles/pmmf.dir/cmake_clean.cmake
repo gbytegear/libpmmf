@@ -1,8 +1,8 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.obj"
-  "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.obj.d"
-  "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.obj"
-  "CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.obj.d"
+  "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.o"
+  "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.o.d"
+  "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.o"
+  "CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.o.d"
   "libpmmf.a"
   "libpmmf.pdb"
 )

@@ -8,12 +8,12 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "C:/Users/ByteGear/Source_Code/libpmmf/test/test.cxx" "CMakeFiles/test.dir/C_/Users/ByteGear/Source_Code/libpmmf/test/test.cxx.obj" "gcc" "CMakeFiles/test.dir/C_/Users/ByteGear/Source_Code/libpmmf/test/test.cxx.obj.d"
+  "/mnt/c/Users/ByteGear/Source_Code/libpmmf/test/test.cxx" "CMakeFiles/test.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/test/test.cxx.o" "gcc" "CMakeFiles/test.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/test/test.cxx.o.d"
   )
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/pmmf.dir/DependInfo.cmake"
+  "/mnt/c/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/pmmf.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.

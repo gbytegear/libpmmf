@@ -26,7 +26,10 @@ auto main(int argc, char* argv[]) -> int {
     std::cerr << "Can't open \"" << argv[1] << "\" file" << std::endl;
     return -1;
   }
-  std::cout << "File \"" << argv[1] << "\" is open" << std::endl;
+  std::cout << "File \"" << argv[1] << "\" is open" << std::endl
+            << "| File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
+
+
 
   MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data));
   if(!second_mapped_array.isMapped()) {
@@ -35,6 +38,8 @@ auto main(int argc, char* argv[]) -> int {
   }
   std::cout << "Second area of \"" << argv[1] << "\" file is mapped" << std::endl;
 
+
+
   MappedArray<Data> first_mapped_array = mapped_file.getMappedArray<Data>(0);
   if(!second_mapped_array.isMapped()) {
     std::cerr << "Can't map first area of \"" << argv[1] << "\" file" << std::endl;
@@ -42,13 +47,29 @@ auto main(int argc, char* argv[]) -> int {
   }
   std::cout << "First area of \"" << argv[1] << "\" file is mapped" << std::endl;
 
+
+
   new(&*first_mapped_array) Data(data_1);
-  second_mapped_array.flush();
-  std::cout << "First area of \"" << argv[1] << "\" file is flushed" << std::endl;
+  if(!first_mapped_array.flush()) {
+    std::cerr << "Can't flush first area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
+  std::cout << "First area of \"" << argv[1] << "\" file is flushed" << std::endl
+            << "| Recorded data: " << first_mapped_array->cstr << std::endl;
+
+
 
   new(&*second_mapped_array) Data(data_2);
-  second_mapped_array.flush();
-  std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl;
+  if(!second_mapped_array.flush()) {
+    std::cerr << "Can't flush second area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
+  std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl
+            << "| Recorded data: " << second_mapped_array->cstr << std::endl;
+
+
+
+  std::cout << "File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
 
   return 0;
 }

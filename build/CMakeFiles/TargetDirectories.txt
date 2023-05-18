@@ -1,4 +1,4 @@
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/pmmf.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/test.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/edit_cache.dir
-C:/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/pmmf.dir
+/mnt/c/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/test.dir
+/mnt/c/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/edit_cache.dir
+/mnt/c/Users/ByteGear/Source_Code/libpmmf/build/CMakeFiles/rebuild_cache.dir

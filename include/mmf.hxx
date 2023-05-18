@@ -3,10 +3,18 @@
 
 #include <cstddef>
 #include <string>
-#include <set>
-#include <shared_mutex>
+#include <iterator>
 
 #include "mmap_wrapper.hxx"
+
+#ifdef _WIN32
+#define IF_WIN(exp) exp
+#define IF_UNIX(exp)
+#else
+#define IF_WIN(exp)
+#define IF_UNIX(exp) exp
+#include <sys/mman.h>
+#endif
 
 namespace pmmf {
 
@@ -53,24 +61,33 @@ public:
     inline size_t getDataSize() const { return element_count * sizeof(T); }
     inline size_t getPageSize() const { return byte_offset + element_count * sizeof(T); }
 
-    T& operator[](size_t index) { return getDataStart() + index; }
-    const T& operator[](size_t index) const { return getDataStart() + index; }
-    T& operator*() { return *getDataStart(); }
-    const T& operator*() const { return *getDataStart(); }
+    inline T& operator[](size_t index) { return getDataStart() + index; }
+    inline const T& operator[](size_t index) const { return getDataStart() + index; }
+    inline T& operator*() { return *getDataStart(); }
+    inline const T& operator*() const { return *getDataStart(); }
+    inline T* operator->() { return getDataStart(); }
+    inline const T* operator->() const { return getDataStart(); }
+
+    inline T* begin() { return getDataStart(); }
+    inline T* end() { return getDataStart() + element_count; }
+    inline const T* begin() const { return getDataStart(); }
+    inline const T* end() const { return getDataStart() + element_count; }
+    inline const T* cbegin() const { return getDataStart(); }
+    inline const T* cend() const { return getDataStart() + element_count; }
+    inline std::reverse_iterator<T*> rbegin() { return getDataStart() + element_count - 1; }
+    inline std::reverse_iterator<T*> rend() { return getDataStart() - 1; }
+    inline std::reverse_iterator<const T*> rbegin() const { return getDataStart() + element_count - 1; }
+    inline std::reverse_iterator<const T*> rend() const { return getDataStart() - 1; }
+    inline std::reverse_iterator<const T*> crbegin() const { return getDataStart() + element_count - 1; }
+    inline std::reverse_iterator<const T*> crend() const { return getDataStart() - 1; }
 
     bool flush() {
-      if(isMapped()) {
-#ifdef _WIN32
-        return
-            ::FlushViewOfFile(page_start, 0) &&
-            ::FlushFileBuffers(file_descriptor);
-      } else return !::FlushFileBuffers(file_descriptor);
-#else
-        return ::msync(page_start, byte_offset + element_count * sizeof(T), MS_SYNC) == 0;
-      } else return false;
-#endif
+      #ifdef _WIN32
+      constexpr int MS_SYNC = 0;
+      #endif
+      if(isMapped()) return msync(file_descriptor, page_start, byte_offset + element_count * sizeof(T), MS_SYNC) == 0;
+      return false;
     }
-
   };
 
   template<typename T>
@@ -79,15 +96,7 @@ public:
 
 private:
 
-  static size_t getSystemPageSize() {
-  #ifdef _WIN32
-    SYSTEM_INFO sysinfo = {0};
-    ::GetSystemInfo(&sysinfo);
-    return sysinfo.dwAllocationGranularity;
-  #else
-    return sysconf(_SC_PAGESIZE);
-  #endif
-  }
+  static size_t getSystemPageSize();
 
   static inline const size_t OS_PAGE_SIZE = getSystemPageSize();
   FileDescriptor file_descriptor = INVALID_FILE_DESCRIPTOR;
@@ -103,17 +112,18 @@ public:
     : file_descriptor(other.file_descriptor), proterction_mode(other.proterction_mode), map_flag(other.map_flag) {}
 
   inline bool isFileOpen() const { return file_descriptor != INVALID_FILE_DESCRIPTOR; }
+  size_t getFileSize() const;
 
   template<typename T>
   MappedArray<T> getMappedArray(size_t byte_offset, size_t element_count = 1) {
     // MappedArray(MappedFile* file, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
     if(!isFileOpen())
-      return MappedArray<T>(nullptr, -1, -1, -1, nullptr);
+      return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
     const size_t page_aligned_offset = (byte_offset / OS_PAGE_SIZE) * OS_PAGE_SIZE;
     byte_offset = byte_offset - page_aligned_offset;
     void* page_start = mmap(nullptr, byte_offset + element_count * sizeof(T), proterction_mode, map_flag, file_descriptor, page_aligned_offset);
     if(!page_start)
-      return MappedArray<T>(nullptr, -1, -1, -1, nullptr);
+      return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
     return MappedArray<T>(file_descriptor, page_aligned_offset, byte_offset, element_count, page_start);
   }
 

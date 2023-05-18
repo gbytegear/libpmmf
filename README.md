@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Open second file, with mapped area size `source_file.getFileSize()`, in rw-mode, trunk file on open
-  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol((int)Protocol::read | (int)Protocol::write | (int)Protocol::open_trunc), MapFlag::priv, 0);
+  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol::rwt, MapFlag::priv, 0);
   if(!target_file.isFileOpen()) { // <----------------------------------------------------------------------------------- Check file is open
     std::cout << "Can't open \"" << argv[2] << "\" file (target)" << std::endl;
     return -1;

@@ -3,114 +3,124 @@
 
 #include <cstddef>
 #include <string>
+#include <set>
+#include <shared_mutex>
 
 #include "mmap_wrapper.hxx"
 
 namespace pmmf {
 
-//! Memory-Mapped file
-class MemoryMappedFile {
-protected:
+class MappedFile {
+public:
+
+  template<typename T>
+  class MappedArray {
+    friend class MappedFile;
+    FileDescriptor file_descriptor;
+    size_t offset;
+    size_t byte_offset;
+    size_t element_count;
+    void* page_start;
+
+    MappedArray(FileDescriptor file_descriptor, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
+      : file_descriptor(file_descriptor), offset(offset), byte_offset(byte_offset), element_count(element_count), page_start(page_start) {}
+
+    T* getDataStart() const { return reinterpret_cast<T*>(reinterpret_cast<char*>(page_start) + byte_offset); }
+
+  public:
+    MappedArray(const MappedArray<T>&) = delete;
+
+    MappedArray(MappedArray<T>&& other)
+      : file_descriptor(other.file_descriptor), offset(other.offset), byte_offset(other.byte_offset), element_count(other.element_count), page_start(other.page_start) {
+      other.file_descriptor = INVALID_FILE_DESCRIPTOR;
+      other.offset = -1;
+      other.byte_offset = -1;
+      other.element_count = -1;
+      other.page_start = nullptr;
+    }
+
+    ~MappedArray() {
+      if(page_start) {
+        flush();
+        munmap(page_start, byte_offset + element_count * sizeof(T));
+      }
+    }
+
+    inline bool isMapped() const { return !!page_start; }
+    inline size_t getDataOffset() const { return offset + byte_offset; }
+    inline size_t getPageOffset() const { return offset; }
+    inline size_t getElementCount() const { return element_count; }
+    inline size_t getDataSize() const { return element_count * sizeof(T); }
+    inline size_t getPageSize() const { return byte_offset + element_count * sizeof(T); }
+
+    T& operator[](size_t index) { return getDataStart() + index; }
+    const T& operator[](size_t index) const { return getDataStart() + index; }
+    T& operator*() { return *getDataStart(); }
+    const T& operator*() const { return *getDataStart(); }
+
+    bool flush() {
+      if(isMapped()) {
+#ifdef _WIN32
+        return
+            ::FlushViewOfFile(page_start, 0) &&
+            ::FlushFileBuffers(file_descriptor);
+      } else return !::FlushFileBuffers(file_descriptor);
+#else
+        return ::msync(page_start, byte_offset + element_count * sizeof(T), MS_SYNC) == 0;
+      } else return false;
+#endif
+    }
+
+  };
+
+  template<typename T>
+  friend class MappedArray;
+
+
+private:
+
+  static size_t getSystemPageSize() {
+  #ifdef _WIN32
+    SYSTEM_INFO sysinfo = {0};
+    ::GetSystemInfo(&sysinfo);
+    return sysinfo.dwAllocationGranularity;
+  #else
+    return sysconf(_SC_PAGESIZE);
+  #endif
+  }
+
+  static inline const size_t OS_PAGE_SIZE = getSystemPageSize();
   FileDescriptor file_descriptor = INVALID_FILE_DESCRIPTOR;
-  void* memory_page_start = nullptr;
-  std::size_t mapped_size = 0;
+  ProtectionMode proterction_mode = ProtectionMode(0x00);
+  MapFlag map_flag = MapFlag(0x00);
 
-  void clearData();
-
-  static FileDescriptor openFile(std::string file_path, Protocol prot);
+  FileDescriptor openFile(std::string file_path, ProtectionMode protection_mode);
 
 public:
-  /**
-   * @brief MemoryMappedFile - move data from other MemoryMappedFile object
-   * @param other - other object of MemoryMappedFile type
-   */
-  MemoryMappedFile(MemoryMappedFile&& other)
-    : file_descriptor(other.file_descriptor),
-      memory_page_start(other.memory_page_start),
-      mapped_size(other.mapped_size) { other.clearData(); }
+  MappedFile(std::string file_path, ProtectionMode protection_mode = ProtectionMode::rw, MapFlag map_flag = MapFlag::priv);
+  MappedFile(const MappedFile&) = delete;
+  MappedFile(MappedFile&& other)
+    : file_descriptor(other.file_descriptor), proterction_mode(other.proterction_mode), map_flag(other.map_flag) {}
 
-  /**
-   * @brief MemoryMappedFile - create new MemoryMappedFile object with setting all attributes
-   * @param file_path - path to file for memory maping
-   * @param map_size - size for memory mapping
-   * @param prot - the prot argument describes the desired memory protection mode. See enum 'Protocol' in "mmap_wrapper.hxx" file.
-   * @param flags - the flags parameter specifies the type of object to reflect, the reflection options, and whether the reflected data belongs only to this process or can be read by others. See enum 'MapFlag' in "mmap_wrapper.hxx" file
-   * @param offset - offset in file before block for memory mapping
-   */
-  MemoryMappedFile(std::string file_path,
-                   std::size_t map_size = 0,
-                   Protocol prot = Protocol((int)Protocol::read | (int)Protocol::write),
-                   MapFlag flags = MapFlag::priv,
-                   std::size_t offset = 0);
-
-  /**
-   * @brief MemoryMappedFile - create new MemoryMappedFile object with setting all flags-attributes, default arguments: map_size = getFileSize(), offset = 0
-   * @param file_path - path to file for memory maping
-   * @param prot - the prot argument describes the desired memory protection mode. See enum 'Protocol' in "mmap_wrapper.hxx" file.
-   * @param flags - the flags parameter specifies the type of object to reflect, the reflection options, and whether the reflected data belongs only to this process or can be read by others. See enum 'MapFlag' in "mmap_wrapper.hxx" file
-   */
-  MemoryMappedFile(std::string file_path,
-                   Protocol prot,
-                   MapFlag flags);
-
-  /**
-   * @brief MemoryMappedFile - create new MemoryMappedFile object with setting file_path, default arguments: map_size = getFileSize(), offset = 0, prot = Protocol((int)Protocol::read | (int)Protocol::write), flags = MapFlag::priv
-   * @param file_path
-   */
-  MemoryMappedFile(std::string file_path);
-
-  ~MemoryMappedFile();
-
-  /**
-   * @brief isFileOpen - checks if a file is open
-   * @return true - if file is open, false - if file isn't open
-   */
   inline bool isFileOpen() const { return file_descriptor != INVALID_FILE_DESCRIPTOR; }
 
-  /**
-   * @brief isFileMapped - checks if a file is mapped in memory
-   * @return true - if file is mapped in memory, false - if file isn't mapped in memory
-   */
-  inline bool isFileMapped() const { return memory_page_start; }
-
-  /**
-   * @brief getFileDescriptor - grants access to a file descriptor
-   * @return file descriptor stored in this object
-   */
-  inline FileDescriptor getFileDescriptor() const { return file_descriptor; }
-
-  /**
-   * @brief getMappedSize -Returns the size of the memory-mapped area of the file
-   * @return memory-mapped area of the file
-   */
-  inline std::size_t getMappedSize() const { return mapped_size; }
-
-  /**
-   * @brief getFileSize - Returns the file size
-   * @return file size
-   */
-  std::size_t getFileSize() const;
-  template<typename T = void> inline T* getPageStart() const { return reinterpret_cast<T*>(memory_page_start); }
-  template<typename T> inline T* get(std::size_t index, std::size_t byte_offset) const {
-    return reinterpret_cast<T*>(reinterpret_cast<char*>(memory_page_start) + byte_offset) + index;
+  template<typename T>
+  MappedArray<T> getMappedArray(size_t byte_offset, size_t element_count = 1) {
+    // MappedArray(MappedFile* file, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
+    if(!isFileOpen())
+      return MappedArray<T>(nullptr, -1, -1, -1, nullptr);
+    const size_t page_aligned_offset = (byte_offset / OS_PAGE_SIZE) * OS_PAGE_SIZE;
+    byte_offset = byte_offset - page_aligned_offset;
+    void* page_start = mmap(nullptr, byte_offset + element_count * sizeof(T), proterction_mode, map_flag, file_descriptor, page_aligned_offset);
+    if(!page_start)
+      return MappedArray<T>(nullptr, -1, -1, -1, nullptr);
+    return MappedArray<T>(file_descriptor, page_aligned_offset, byte_offset, element_count, page_start);
   }
 
-  /**
-   * @brief flush - synchronizes the contents of a file with its mapped area in memory
-   * @return true - if the operation was successful, false - if the operation failed
-   */
-  bool flush();
-
-  /**
-   * @brief operator = - move data of other MemoryMappedFile object to this
-   * @param other - temporary MemoryMappedFile object
-   * @return reference to this object
-   */
-  inline MemoryMappedFile& operator = (MemoryMappedFile&& other) {
-    this->~MemoryMappedFile();
-    return *new(this) MemoryMappedFile(std::move(other));
-  }
 };
+
+template <typename T>
+using MappedArray = MappedFile::MappedArray<T>;
 
 }
 

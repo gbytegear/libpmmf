@@ -1,15 +1,12 @@
 #include "include/mmap_wrapper.hxx"
 
+#define DEBUG
+
+
+// WIN32 =============================================================================================
 #ifdef _WIN32
 
-#ifdef __USE_FILE_OFFSET64
-# define DWORD_HI(x) (x >> 32)
-# define DWORD_LO(x) ((x) & 0xffffffff)
-#else
-# define DWORD_HI(x) (0)
-# define DWORD_LO(x) (x)
-#endif
-
+// UNIX =============================================================================================
 #else
 #include <unistd.h>
 #include <sys/mman.h>
@@ -17,15 +14,15 @@
 
 using namespace pmmf;
 
-extern void* pmmf::mmapPortable(void* start, size_t length, Protocol prot, MapFlag flags, FileDescriptor fd, std::size_t offset) {
+extern void* pmmf::mmap(void* start, size_t length, ProtectionMode prot, MapFlag flags, FileDescriptor fd, off_t offset) {
 #ifndef _WIN32
   return ::mmap(
         start,
         length,
         ( ( (int)0x00 )
-        | ( ( (int)prot & (int)Protocol::read ) ? PROT_READ : 0x00 )
-        | ( ( (int)prot & (int)Protocol::write ) ? PROT_WRITE : 0x00 )
-        | ( ( (int)prot & (int)Protocol::write ) ? PROT_EXEC : 0x00 ) ),
+        | ( ( (int)prot & (int)ProtectionMode::read ) ? PROT_READ : 0x00 )
+        | ( ( (int)prot & (int)ProtectionMode::write ) ? PROT_WRITE : 0x00 )
+        | ( ( (int)prot & (int)ProtectionMode::write ) ? PROT_EXEC : 0x00 ) ),
         ( ( (int)0x00 )
         | ( ( (int)flags & (int)MapFlag::anonymous ) ? MAP_ANONYMOUS : 0x00 )
         | ( ( (int)flags & (int)MapFlag::priv ) ? MAP_PRIVATE : 0x00 )
@@ -42,44 +39,66 @@ extern void* pmmf::mmapPortable(void* start, size_t length, Protocol prot, MapFl
 
 #else
   if(fd == INVALID_FILE_DESCRIPTOR && (!((int)flags & (int)MapFlag::anon) || offset))
-      return (void*) -1;
-  
-  DWORD fl_protect =
-    ((int)prot & (int)Protocol::write)
-    ? ((int)prot & (int)Protocol::exec)
+      return MAP_FAILED;
+
+  DWORD protect =
+    ((int)prot & (int)ProtectionMode::write)
+    ? ((int)prot & (int)ProtectionMode::exec)
       ? PAGE_EXECUTE_READWRITE
       : PAGE_READWRITE
-    : ((int)prot & (int)Protocol::exec)
-    ? ((int)prot & (int)Protocol::read)
+    : ((int)prot & (int)ProtectionMode::exec)
+    ? ((int)prot & (int)ProtectionMode::read)
       ? PAGE_EXECUTE_READ
       : PAGE_EXECUTE
-    : PAGE_READONLY;
-  
-  std::size_t end = length + offset;
-  HANDLE h = CreateFileMapping(fd, NULL, fl_protect, DWORD_HI(end), DWORD_LO(end), NULL);
-  
-  DWORD dwDesiredAccess =
-    ((int)prot & (int)Protocol::write)
-    ? FILE_MAP_WRITE
-    : FILE_MAP_READ;
-  if((int)prot & (int)Protocol::exec)
-    dwDesiredAccess |= FILE_MAP_EXECUTE;
-  if((int)flags & (int)MapFlag::priv)
-    dwDesiredAccess |= FILE_MAP_COPY;
-  
-  void* ret = MapViewOfFile(h, dwDesiredAccess, DWORD_HI(offset), DWORD_LO(offset), length);
-  if(ret == nullptr) {
-    CloseHandle(h);
-    ret = (void*) -1;
+    : ((int)prot & (int)ProtectionMode::read)
+      ? PAGE_READONLY
+      : PAGE_NOACCESS;
+
+  HANDLE map_handle;
+  if constexpr (sizeof(off_t) <= sizeof(DWORD)) {
+    map_handle = CreateFileMapping(fd, nullptr, protect, 0, static_cast<DWORD>(offset + static_cast<off_t>(length)), nullptr);
+  } else {
+    const off_t max_size = offset + static_cast<off_t>(length);
+    map_handle = CreateFileMapping(fd, nullptr, protect, static_cast<DWORD>((max_size >> 32) & 0xFFFFFFFFL), static_cast<DWORD>(max_size & 0xFFFFFFFFL), nullptr);
+  }
+  if(map_handle == nullptr)
+    return MAP_FAILED;
+
+  DWORD dwDesiredAccess = 0
+    | (((int)prot & (int)ProtectionMode::write) ? FILE_MAP_WRITE : 0)
+    | (((int)prot & (int)ProtectionMode::read) ? FILE_MAP_READ : 0)
+    | (((int)prot & (int)ProtectionMode::exec) ? FILE_MAP_EXECUTE : 0)
+    | (((int)flags & (int)MapFlag::priv) ? FILE_MAP_COPY : 0);
+
+  void* start_page_pointer;
+  if((int)flags & (int)MapFlag::fixed) {
+    if constexpr (sizeof(off_t) <= sizeof(DWORD)) {
+      start_page_pointer = MapViewOfFileEx(map_handle, dwDesiredAccess, 0, static_cast<DWORD>(offset), length, start);
+    } else {
+      start_page_pointer = MapViewOfFileEx(map_handle, dwDesiredAccess, static_cast<DWORD>((offset >> 32) & 0xFFFFFFFFL), static_cast<DWORD>(offset & 0xFFFFFFFFL), length, start);
+    }
+  } else {
+    if constexpr (sizeof(off_t) <= sizeof(DWORD)) {
+      start_page_pointer = MapViewOfFile(map_handle, dwDesiredAccess, 0, static_cast<DWORD>(offset), length);
+    } else {
+      start_page_pointer = MapViewOfFile(map_handle, dwDesiredAccess, static_cast<DWORD>((offset >> 32) & 0xFFFFFFFFL), static_cast<DWORD>(offset & 0xFFFFFFFFL), length);
+    }
   }
 
-  return ret;
+  if(start_page_pointer == nullptr) {
+    CloseHandle(map_handle);
+    return MAP_FAILED;
+  }
+
+  CloseHandle(map_handle);
+
+  return start_page_pointer;
 #endif
 }
 
 
 
-extern void pmmf::munmapPortable(void *addr, std::size_t length) {
+extern void pmmf::munmap(void *addr, std::size_t length) {
 #ifndef _WIN32
   munmap(addr, length);
 #else

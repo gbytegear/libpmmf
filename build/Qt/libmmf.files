@@ -2,8 +2,6 @@
 ../../include/mmf.hxx
 ../../source/mmap_wrapper.cxx
 ../../source/mmf.cxx
-../../test/cat.cxx
-../../test/copy_to.cxx
-../../test/data_storage.cxx
+../../test/test.cxx
 ../CMakeLists.txt
 ../../README.md

@@ -50,11 +50,16 @@ FileDescriptor MappedFile::openFile(std::string file_path, ProtectionMode protec
           file_path.c_str(),
           ((int)0x00
           | (checkProtoFlag(protection_mode, ProtectionMode::trunc) ? O_TRUNC : 0x00)
-          | (checkProtoFlag(protection_mode, ProtectionMode::read) && checkProtoFlag(protection_mode, ProtectionMode::write)) ? O_RDWR
-          : checkProtoFlag(protection_mode, ProtectionMode::read) ? O_RDONLY
-            : checkProtoFlag(protection_mode, ProtectionMode::write)
-              ? O_WRONLY
-              : 0x00),
+          | (
+              (checkProtoFlag(protection_mode, ProtectionMode::read) && checkProtoFlag(protection_mode, ProtectionMode::write))
+              ? O_RDWR
+              : checkProtoFlag(protection_mode, ProtectionMode::read)
+                ? O_RDONLY
+                : checkProtoFlag(protection_mode, ProtectionMode::write)
+                  ? O_WRONLY
+                  : 0x00
+            )
+          ),
           S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
           );
 #endif
@@ -72,11 +77,16 @@ FileDescriptor MappedFile::openFile(std::string file_path, ProtectionMode protec
           file_path.c_str(),
           ((int)O_CREAT
           | (checkProtoFlag(protection_mode, ProtectionMode::trunc) ? O_TRUNC : 0x00)
-          | (checkProtoFlag(protection_mode, ProtectionMode::read) && checkProtoFlag(protection_mode, ProtectionMode::write)) ? O_RDWR
-          : checkProtoFlag(protection_mode, ProtectionMode::read) ? O_RDONLY
-            : checkProtoFlag(protection_mode, ProtectionMode::write)
-              ? O_WRONLY
-              : 0x00),
+          | (
+              (checkProtoFlag(protection_mode, ProtectionMode::read) && checkProtoFlag(protection_mode, ProtectionMode::write))
+              ? O_RDWR
+              : checkProtoFlag(protection_mode, ProtectionMode::read)
+                ? O_RDONLY
+                : checkProtoFlag(protection_mode, ProtectionMode::write)
+                  ? O_WRONLY
+                  : 0x00
+            )
+          ),
           S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH
           );
 #endif
@@ -89,6 +99,14 @@ MappedFile::MappedFile(std::string file_path, ProtectionMode protection_mode, Ma
     protection_mode = ProtectionMode(0x00);
     map_flag = MapFlag(0x00);
   }
+}
+
+MappedFile::~MappedFile() {
+#ifdef _WIN32
+  ::CloseHandle(file_descriptor);
+#else
+  ::close(file_descriptor);
+#endif
 }
 
 size_t MappedFile::getFileSize() const {

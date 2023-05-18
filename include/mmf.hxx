@@ -14,6 +14,7 @@
 #define IF_WIN(exp)
 #define IF_UNIX(exp) exp
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace pmmf {
@@ -106,23 +107,30 @@ private:
   FileDescriptor openFile(std::string file_path, ProtectionMode protection_mode);
 
 public:
-  MappedFile(std::string file_path, ProtectionMode protection_mode = ProtectionMode::rw, MapFlag map_flag = MapFlag::priv);
+  MappedFile(std::string file_path, ProtectionMode protection_mode = ProtectionMode::rw, MapFlag map_flag = MapFlag::shared);
   MappedFile(const MappedFile&) = delete;
   MappedFile(MappedFile&& other)
     : file_descriptor(other.file_descriptor), proterction_mode(other.proterction_mode), map_flag(other.map_flag) {}
 
+  ~MappedFile();
+
+  static inline size_t getOSPageSize() { return OS_PAGE_SIZE; }
   inline bool isFileOpen() const { return file_descriptor != INVALID_FILE_DESCRIPTOR; }
   size_t getFileSize() const;
 
   template<typename T>
   MappedArray<T> getMappedArray(size_t byte_offset, size_t element_count = 1) {
-    // MappedArray(MappedFile* file, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
     if(!isFileOpen())
       return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
+    #ifndef _WIN32
+    if(getFileSize() < byte_offset + element_count * sizeof(T))
+      if(ftruncate64(file_descriptor, byte_offset + element_count * sizeof(T)) != 0)
+        return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
+    #endif
     const size_t page_aligned_offset = (byte_offset / OS_PAGE_SIZE) * OS_PAGE_SIZE;
     byte_offset = byte_offset - page_aligned_offset;
     void* page_start = mmap(nullptr, byte_offset + element_count * sizeof(T), proterction_mode, map_flag, file_descriptor, page_aligned_offset);
-    if(!page_start)
+    if(page_start == (void*)-1)
       return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
     return MappedArray<T>(file_descriptor, page_aligned_offset, byte_offset, element_count, page_start);
   }

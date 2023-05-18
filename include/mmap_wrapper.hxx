@@ -42,8 +42,8 @@ enum class ProtectionMode : int {
   read        = 0x01, //< data can be read
   write       = 0x02, //< data can be write
 
-#ifdef FILE_MAP_EXECUTE
-  exec        = 0x04, //< data ca be executed
+//#ifdef FILE_MAP_EXECUTE
+  exec        = 0x04, //< data can be executed
   rx          = 0x01 | 0x04,
   wx          = 0x02 | 0x04,
   rwx         = 0x01 | 0x02 | 0x04,
@@ -51,16 +51,16 @@ enum class ProtectionMode : int {
   wxt         = 0x02 | 0x04 | 0x08,
   rwxt        = 0x01 | 0x02 | 0x04 | 0x08,
 
-#else
-  exec        = 0x00, //< data ca be executed (FLAG IS DISABLED)
-  rx          = 0x01 | 0x00,
-  wx          = 0x02 | 0x00,
-  rwx         = 0x01 | 0x02 | 0x00,
-  rxt         = 0x01 | 0x00 | 0x08,
-  wxt         = 0x02 | 0x00 | 0x08,
-  rwxt        = 0x01 | 0x02 | 0x00 | 0x08,
+//#else
+//  exec        = 0x00, //< data can be executed (FLAG IS DISABLED)
+//  rx          = 0x01 | 0x00,
+//  wx          = 0x02 | 0x00,
+//  rwx         = 0x01 | 0x02 | 0x00,
+//  rxt         = 0x01 | 0x00 | 0x08,
+//  wxt         = 0x02 | 0x00 | 0x08,
+//  rwxt        = 0x01 | 0x02 | 0x00 | 0x08,
 
-#endif
+//#endif
   trunc       = 0x08, //< clear file on open
   rw          = 0x01 | 0x02,
   rt          = 0x01 | 0x08,

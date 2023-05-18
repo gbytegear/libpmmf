@@ -13,6 +13,8 @@ auto main(int argc, char* argv[]) -> int {
 
   using namespace pmmf;
 
+  std::clog << "OS page size: " << MappedFile::getOSPageSize() << std::endl;
+
   if (argc < 2) {
     std::cerr << "Required 1 file paths!" << std::endl;
     return -1;

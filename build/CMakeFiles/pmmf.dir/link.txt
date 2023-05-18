@@ -1,2 +1,0 @@
-/usr/bin/ar qc libpmmf.a CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmap_wrapper.cxx.o CMakeFiles/pmmf.dir/mnt/c/Users/ByteGear/Source_Code/libpmmf/source/mmf.cxx.o
-/usr/bin/ranlib libpmmf.a

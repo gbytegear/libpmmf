@@ -16,26 +16,23 @@ using namespace pmmf;
 
 extern void* pmmf::mmap(void* start, size_t length, ProtectionMode prot, MapFlag flags, FileDescriptor fd, off_t offset) {
 #ifndef _WIN32
-  return ::mmap(
-        start,
-        length,
-        ( ( (int)0x00 )
-        | ( ( (int)prot & (int)ProtectionMode::read ) ? PROT_READ : 0x00 )
-        | ( ( (int)prot & (int)ProtectionMode::write ) ? PROT_WRITE : 0x00 )
-        | ( ( (int)prot & (int)ProtectionMode::write ) ? PROT_EXEC : 0x00 ) ),
-        ( ( (int)0x00 )
-        | ( ( (int)flags & (int)MapFlag::anonymous ) ? MAP_ANONYMOUS : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::priv ) ? MAP_PRIVATE : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::shared ) ? MAP_SHARED : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::denywrite ) ? MAP_DENYWRITE : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::executable ) ? MAP_EXECUTABLE : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::noreserve ) ? MAP_NORESERVE : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::locked ) ? MAP_LOCKED : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::growsdown ) ? MAP_GROWSDOWN : 0x00 )
-        | ( ( (int)flags & (int)MapFlag::file ) ? MAP_FILE : 0x00 ) ),
-        fd,
-        static_cast<off_t>(offset)
-        );
+  int __prot = ( ( (int)0x00 )
+               | ( ( (int)prot & (int)ProtectionMode::read ) ? PROT_READ : 0x00 )
+               | ( ( (int)prot & (int)ProtectionMode::write ) ? PROT_WRITE : 0x00 )
+               | ( ( (int)prot & (int)ProtectionMode::exec ) ? PROT_EXEC : 0x00 ) );
+
+  int __flags = ( ( (int)0x00 )
+                | ( ( (int)flags & (int)MapFlag::anonymous ) ? MAP_ANONYMOUS : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::priv ) ? MAP_PRIVATE : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::shared ) ? MAP_SHARED : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::denywrite ) ? MAP_DENYWRITE : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::executable ) ? MAP_EXECUTABLE : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::noreserve ) ? MAP_NORESERVE : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::locked ) ? MAP_LOCKED : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::growsdown ) ? MAP_GROWSDOWN : 0x00 )
+                | ( ( (int)flags & (int)MapFlag::file ) ? MAP_FILE : 0x00 ) );
+
+  return ::mmap(start, length, __prot, __flags, fd, static_cast<off_t>(offset));
 
 #else
   if(fd == INVALID_FILE_DESCRIPTOR && (!((int)flags & (int)MapFlag::anon) || offset))
@@ -109,9 +106,10 @@ extern void pmmf::munmap(void *addr, std::size_t length) {
 extern int pmmf::msync(FileDescriptor file_descriptor, void* start, size_t length, int flags) {
 #ifdef _WIN32
   return (::FlushViewOfFile(start, 0))
-      ? (::FlushFileBuffers(file_descriptor))
-        ? 0 : -1
-      : -1;
+         ? (::FlushFileBuffers(file_descriptor))
+           ? 0
+           : -1
+         : -1;
 #else
   return ::msync(start, length, MS_SYNC);
 #endif

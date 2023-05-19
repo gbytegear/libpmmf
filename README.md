@@ -66,7 +66,7 @@ auto main(int argc, char* argv[]) -> int {
 
 
 
-  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data), 2);
+  MappedData<Data> second_mapped_array = mapped_file.getMappedData<Data>(sizeof(Data), 2);
   if(!second_mapped_array.isMapped()) {
     std::cerr << "Can't map second area of \"" << argv[1] << "\" file" << std::endl;
     return -1;
@@ -75,7 +75,7 @@ auto main(int argc, char* argv[]) -> int {
 
 
 
-  MappedArray<Data> first_mapped_array = mapped_file.getMappedArray<Data>(0);
+  MappedData<Data> first_mapped_array = mapped_file.getMappedData<Data>(0);
   if(!second_mapped_array.isMapped()) {
     std::cerr << "Can't map first area of \"" << argv[1] << "\" file" << std::endl;
     return -1;

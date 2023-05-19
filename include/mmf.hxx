@@ -23,7 +23,7 @@ class MappedFile {
 public:
 
   template<typename T>
-  class MappedArray {
+  class MappedData {
     friend class MappedFile;
     FileDescriptor file_descriptor;
     size_t offset;
@@ -31,15 +31,15 @@ public:
     size_t element_count;
     void* page_start;
 
-    MappedArray(FileDescriptor file_descriptor, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
+    MappedData(FileDescriptor file_descriptor, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
       : file_descriptor(file_descriptor), offset(offset), byte_offset(byte_offset), element_count(element_count), page_start(page_start) {}
 
     T* getDataStart() const { return reinterpret_cast<T*>(reinterpret_cast<char*>(page_start) + byte_offset); }
 
   public:
-    MappedArray(const MappedArray<T>&) = delete;
+    MappedData(const MappedData<T>&) = delete;
 
-    MappedArray(MappedArray<T>&& other)
+    MappedData(MappedData<T>&& other)
       : file_descriptor(other.file_descriptor), offset(other.offset), byte_offset(other.byte_offset), element_count(other.element_count), page_start(other.page_start) {
       other.file_descriptor = INVALID_FILE_DESCRIPTOR;
       other.offset = -1;
@@ -48,7 +48,7 @@ public:
       other.page_start = nullptr;
     }
 
-    ~MappedArray() {
+    ~MappedData() {
       if(page_start) {
         flush();
         munmap(page_start, byte_offset + element_count * sizeof(T));
@@ -92,7 +92,7 @@ public:
   };
 
   template<typename T>
-  friend class MappedArray;
+  friend class MappedData;
 
 
 private:
@@ -119,26 +119,26 @@ public:
   size_t getFileSize() const;
 
   template<typename T>
-  MappedArray<T> getMappedArray(size_t byte_offset, size_t element_count = 1) {
+  MappedData<T> getMappedData(size_t byte_offset, size_t element_count = 1) {
     if(!isFileOpen())
-      return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
+      return MappedData<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
     #ifndef _WIN32
     if(getFileSize() < byte_offset + element_count * sizeof(T))
       if(ftruncate64(file_descriptor, byte_offset + element_count * sizeof(T)) != 0)
-        return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
+        return MappedData<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
     #endif
     const size_t page_aligned_offset = (byte_offset / OS_PAGE_SIZE) * OS_PAGE_SIZE;
     byte_offset = byte_offset - page_aligned_offset;
     void* page_start = mmap(nullptr, byte_offset + element_count * sizeof(T), proterction_mode, map_flag, file_descriptor, page_aligned_offset);
     if(page_start == (void*)-1)
-      return MappedArray<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
-    return MappedArray<T>(file_descriptor, page_aligned_offset, byte_offset, element_count, page_start);
+      return MappedData<T>(INVALID_FILE_DESCRIPTOR, -1, -1, -1, nullptr);
+    return MappedData<T>(file_descriptor, page_aligned_offset, byte_offset, element_count, page_start);
   }
 
 };
 
 template <typename T>
-using MappedArray = MappedFile::MappedArray<T>;
+using MappedData = MappedFile::MappedData<T>;
 
 }
 

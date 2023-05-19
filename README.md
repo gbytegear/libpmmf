@@ -33,7 +33,7 @@ Link with your project:
 g++ <your_project_source_file> -L<path_to_libpmmf.a> -I<path_to_libpmmf/include> -lpmmf
 ```
 
-A simple example of outputting a text file to the console, modifying it, and then outputting it again to the console:
+Simple programm example:
 
 ```cpp
 #include "include/mmf.hxx"
@@ -56,23 +56,24 @@ auto main(int argc, char* argv[]) -> int {
     return -1;
   }
 
-  Data data_1 = {"Lorem ipsum dolor sit amet, consectetur efficitur"};
-  Data data_2 = {"Lorem ipsum dolor sit amet, consectetur tincidunt"};
-
-  MappedFile mapped_file(argv[1]);
+  MappedFile mapped_file(argv[1], ProtectionMode::rw, MapFlag::shared);
   if(!mapped_file.isFileOpen()) {
     std::cerr << "Can't open \"" << argv[1] << "\" file" << std::endl;
     return -1;
   }
   std::cout << "File \"" << argv[1] << "\" is open" << std::endl
-            << "File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
+            << "| File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
 
-  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data));
+
+
+  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data), 2);
   if(!second_mapped_array.isMapped()) {
     std::cerr << "Can't map second area of \"" << argv[1] << "\" file" << std::endl;
     return -1;
   }
   std::cout << "Second area of \"" << argv[1] << "\" file is mapped" << std::endl;
+
+
 
   MappedArray<Data> first_mapped_array = mapped_file.getMappedArray<Data>(0);
   if(!second_mapped_array.isMapped()) {
@@ -81,13 +82,37 @@ auto main(int argc, char* argv[]) -> int {
   }
   std::cout << "First area of \"" << argv[1] << "\" file is mapped" << std::endl;
 
-  new(&*first_mapped_array) Data(data_1);
-  second_mapped_array.flush();
-  std::cout << "First area of \"" << argv[1] << "\" file is flushed" << std::endl;
 
-  new(&*second_mapped_array) Data(data_2);
-  second_mapped_array.flush();
+
+  Data& page_1_data_1 = *first_mapped_array;
+  Data& page_2_data_1 = *second_mapped_array;
+  Data& page_2_data_2 = second_mapped_array[1];
+
+
+
+  new(&page_1_data_1) Data{"Lorem ipsum dolor sit amet, consectetur efficitur"};
+  if(!first_mapped_array.flush()) {
+    std::cerr << "Can't flush first area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
+  std::cout << "First area of \"" << argv[1] << "\" file is flushed" << std::endl
+            << "| Recorded data: " << first_mapped_array->cstr << std::endl;
+
+
+
+  new(&page_2_data_1) Data{"Lorem ipsum dolor sit amet, consectetur tincidunt"};
+  new(&page_2_data_2) Data{"Lorem ipsum dolor sit amet, consectetur porttitor"};
+  if(!second_mapped_array.flush()) {
+    std::cerr << "Can't flush second area of \"" << argv[1] << "\" file" << std::endl;
+    return -1;
+  }
   std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl;
+
+
+  for(auto& data : second_mapped_array)
+    std::cout << "| Recorded data: " << data.cstr << std::endl;
+
+
 
   std::cout << "File size: " << mapped_file.getFileSize() << " bytes" << std::endl;
 
@@ -95,49 +120,3 @@ auto main(int argc, char* argv[]) -> int {
 }
 ```
 
-An example of copying the contents of one file to another:
-
-```cpp
-#include "include/mmf.hxx"
-
-#include <iostream>
-#include <cstring> // Required for memcpy on Linux
-
-
-int main(int argc, char* argv[]) {
-
-  using namespace pmmf;
-
-  if (argc < 3) {
-    std::cout << "Required 2 file paths!" << std::endl;
-    return -1;
-  }
-
-  MemoryMappedFile source_file(argv[1], Protocol::read, MapFlag::priv);// <---------------------------------------------- Open first file
-  if(!source_file.isFileOpen()) { // <----------------------------------------------------------------------------------- Check file is open
-    std::cout << "Can't open \"" << argv[1] << "\" file (source)" << std::endl;
-    return -1;
-  } else if(!source_file.isFileMapped()) { // <-------------------------------------------------------------------------- Check file is mapped
-    std::cout << "Can't map \"" << argv[1] << "\" file (source)" << std::endl;
-    return -1;
-  }
-
-  // Open second file, with mapped area size `source_file.getFileSize()`, in rw-mode, trunk file on open
-  MemoryMappedFile target_file(argv[2], source_file.getFileSize(), Protocol::rwt, MapFlag::priv, 0);
-  if(!target_file.isFileOpen()) { // <----------------------------------------------------------------------------------- Check file is open
-    std::cout << "Can't open \"" << argv[2] << "\" file (target)" << std::endl;
-    return -1;
-  } else if(!target_file.isFileMapped()) { // <-------------------------------------------------------------------------- Check file is mapped
-    std::cout << "Can't map \"" << argv[2] << "\" file (target)" << std::endl;
-    return -1;
-  }
-
-  memcpy(target_file.getPageStart<void>(), source_file.getPageStart<void>(), source_file.getFileSize()); // <------------ Copy data from first file to second file
-  if(!target_file.flush()) { // <---------------------------------------------------------------------------------------- Write changes to file
-    std::cout << "Can't flush \"" << argv[2] << "\" file" << std::endl;
-    return -1;
-  }
-
-  return 0;
-}
-```

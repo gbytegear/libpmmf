@@ -62,8 +62,8 @@ public:
     inline size_t getDataSize() const { return element_count * sizeof(T); }
     inline size_t getPageSize() const { return byte_offset + element_count * sizeof(T); }
 
-    inline T& operator[](size_t index) { return getDataStart() + index; }
-    inline const T& operator[](size_t index) const { return getDataStart() + index; }
+    inline T& operator[](size_t index) { return *(getDataStart() + index); }
+    inline const T& operator[](size_t index) const { return *(getDataStart() + index); }
     inline T& operator*() { return *getDataStart(); }
     inline const T& operator*() const { return *getDataStart(); }
     inline T* operator->() { return getDataStart(); }

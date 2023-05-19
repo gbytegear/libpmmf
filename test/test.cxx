@@ -13,17 +13,12 @@ auto main(int argc, char* argv[]) -> int {
 
   using namespace pmmf;
 
-  std::clog << "OS page size: " << MappedFile::getOSPageSize() << std::endl;
-
   if (argc < 2) {
     std::cerr << "Required 1 file paths!" << std::endl;
     return -1;
   }
 
-  Data data_1 = {"Lorem ipsum dolor sit amet, consectetur efficitur"};
-  Data data_2 = {"Lorem ipsum dolor sit amet, consectetur tincidunt"};
-
-  MappedFile mapped_file(argv[1]);
+  MappedFile mapped_file(argv[1], ProtectionMode::rw, MapFlag::shared);
   if(!mapped_file.isFileOpen()) {
     std::cerr << "Can't open \"" << argv[1] << "\" file" << std::endl;
     return -1;
@@ -33,7 +28,7 @@ auto main(int argc, char* argv[]) -> int {
 
 
 
-  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data));
+  MappedArray<Data> second_mapped_array = mapped_file.getMappedArray<Data>(sizeof(Data), 2);
   if(!second_mapped_array.isMapped()) {
     std::cerr << "Can't map second area of \"" << argv[1] << "\" file" << std::endl;
     return -1;
@@ -51,7 +46,13 @@ auto main(int argc, char* argv[]) -> int {
 
 
 
-  new(&*first_mapped_array) Data(data_1);
+  Data& page_1_data_1 = *first_mapped_array;
+  Data& page_2_data_1 = *second_mapped_array;
+  Data& page_2_data_2 = second_mapped_array[1];
+
+
+
+  new(&page_1_data_1) Data{"Lorem ipsum dolor sit amet, consectetur efficitur"};
   if(!first_mapped_array.flush()) {
     std::cerr << "Can't flush first area of \"" << argv[1] << "\" file" << std::endl;
     return -1;
@@ -61,13 +62,17 @@ auto main(int argc, char* argv[]) -> int {
 
 
 
-  new(&*second_mapped_array) Data(data_2);
+  new(&page_2_data_1) Data{"Lorem ipsum dolor sit amet, consectetur tincidunt"};
+  new(&page_2_data_2) Data{"Lorem ipsum dolor sit amet, consectetur porttitor"};
   if(!second_mapped_array.flush()) {
     std::cerr << "Can't flush second area of \"" << argv[1] << "\" file" << std::endl;
     return -1;
   }
-  std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl
-            << "| Recorded data: " << second_mapped_array->cstr << std::endl;
+  std::cout << "Second area of \"" << argv[1] << "\" file is flushed" << std::endl;
+
+
+  for(auto& data : second_mapped_array)
+    std::cout << "| Recorded data: " << data.cstr << std::endl;
 
 
 

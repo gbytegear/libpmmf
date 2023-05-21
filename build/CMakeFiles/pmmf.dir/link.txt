@@ -1,2 +1,0 @@
-C:/Qt/Tools/mingw1120_64/bin/ar.exe qc libpmmf.a CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/BinOM/libpmmf/source/mmap_wrapper.cxx.obj CMakeFiles/pmmf.dir/C_/Users/ByteGear/Source_Code/BinOM/libpmmf/source/mmf.cxx.obj
-C:/Qt/Tools/mingw1120_64/bin/ranlib.exe libpmmf.a

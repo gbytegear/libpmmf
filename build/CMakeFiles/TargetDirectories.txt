@@ -1,0 +1,4 @@
+C:/Users/ByteGear/Source_Code/BinOM/libpmmf/build/CMakeFiles/pmmf.dir
+C:/Users/ByteGear/Source_Code/BinOM/libpmmf/build/CMakeFiles/test.dir
+C:/Users/ByteGear/Source_Code/BinOM/libpmmf/build/CMakeFiles/edit_cache.dir
+C:/Users/ByteGear/Source_Code/BinOM/libpmmf/build/CMakeFiles/rebuild_cache.dir

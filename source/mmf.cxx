@@ -102,10 +102,11 @@ MappedFile::MappedFile(std::string file_path, ProtectionMode protection_mode, Ma
 }
 
 MappedFile::~MappedFile() {
+  if(isFileOpen())
 #ifdef _WIN32
-  ::CloseHandle(file_descriptor);
+    ::CloseHandle(file_descriptor);
 #else
-  ::close(file_descriptor);
+    ::close(file_descriptor);
 #endif
 }
 

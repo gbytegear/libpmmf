@@ -25,11 +25,11 @@ public:
   template<typename T>
   class MappedData {
     friend class MappedFile;
-    FileDescriptor file_descriptor;
-    size_t offset;
-    size_t byte_offset;
-    size_t element_count;
-    void* page_start;
+    FileDescriptor file_descriptor = INVALID_FILE_DESCRIPTOR;
+    size_t offset = -1;
+    size_t byte_offset = -1;
+    size_t element_count = -1;
+    void* page_start = nullptr;
 
     MappedData(FileDescriptor file_descriptor, size_t offset, size_t byte_offset, size_t element_count, void* page_start)
       : file_descriptor(file_descriptor), offset(offset), byte_offset(byte_offset), element_count(element_count), page_start(page_start) {}
@@ -37,6 +37,8 @@ public:
     T* getDataStart() const { return reinterpret_cast<T*>(reinterpret_cast<char*>(page_start) + byte_offset); }
 
   public:
+    MappedData() = default;
+
     MappedData(const MappedData<T>&) = delete;
 
     MappedData(MappedData<T>&& other)
@@ -89,6 +91,12 @@ public:
       if(isMapped()) return msync(file_descriptor, page_start, byte_offset + element_count * sizeof(T), MS_SYNC) == 0;
       return false;
     }
+
+    MappedData<T>& operator=(MappedData<T>&& other) {
+      ~MappedData<T>();
+      return new(this) MappedData<T>(std::move(other));
+    }
+
   };
 
   template<typename T>
@@ -110,7 +118,13 @@ public:
   MappedFile(std::string file_path, ProtectionMode protection_mode = ProtectionMode::rw, MapFlag map_flag = MapFlag::shared);
   MappedFile(const MappedFile&) = delete;
   MappedFile(MappedFile&& other)
-    : file_descriptor(other.file_descriptor), proterction_mode(other.proterction_mode), map_flag(other.map_flag) {}
+    : file_descriptor(other.file_descriptor),
+      proterction_mode(other.proterction_mode),
+      map_flag(other.map_flag) {
+    other.file_descriptor = INVALID_FILE_DESCRIPTOR;
+    other.proterction_mode = ProtectionMode(0);
+    other.map_flag = MapFlag(0);
+  }
 
   ~MappedFile();
 
